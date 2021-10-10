@@ -7,19 +7,10 @@ declare(strict_types=1);
 
 namespace Magento\Security\Model\ResourceModel;
 
-use Magento\Framework\App\ObjectManager;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Model\AbstractModel;
-use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
-use Magento\Framework\Model\ResourceModel\Db\Context;
-use Magento\Framework\Stdlib\DateTime\Timezone\LocalizedDateToUtcConverterInterface;
-use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
-use Magento\Security\Model\UserExpiration as UserExpirationModel;
-
 /**
  * Admin User Expiration resource model
  */
-class UserExpiration extends AbstractDb
+class UserExpiration extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
 {
 
     /**
@@ -30,31 +21,24 @@ class UserExpiration extends AbstractDb
     protected $_isPkAutoIncrement = false;
 
     /**
-     * @var TimezoneInterface
+     * @var \Magento\Framework\Stdlib\DateTime\TimezoneInterface
      */
     private $timezone;
 
     /**
-     * @var LocalizedDateToUtcConverterInterface
-     */
-    private $localizedDateToUtcConverter;
-
-    /**
-     * @param Context $context
-     * @param TimezoneInterface $timezone
-     * @param string|null $connectionName
-     * @param LocalizedDateToUtcConverterInterface|null $localizedDateToUtcConverter
+     * UserExpiration constructor.
+     *
+     * @param \Magento\Framework\Model\ResourceModel\Db\Context $context
+     * @param \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone
+     * @param string $connectionName
      */
     public function __construct(
-        Context $context,
-        TimezoneInterface $timezone,
-        ?string $connectionName = null,
-        ?LocalizedDateToUtcConverterInterface $localizedDateToUtcConverter = null
+        \Magento\Framework\Model\ResourceModel\Db\Context $context,
+        \Magento\Framework\Stdlib\DateTime\TimezoneInterface $timezone,
+        ?string $connectionName = null
     ) {
         parent::__construct($context, $connectionName);
         $this->timezone = $timezone;
-        $this->localizedDateToUtcConverter = $localizedDateToUtcConverter ?: ObjectManager::getInstance()
-            ->get(LocalizedDateToUtcConverterInterface::class);
     }
 
     /**
@@ -70,17 +54,15 @@ class UserExpiration extends AbstractDb
     /**
      * Convert to UTC time.
      *
-     * @param AbstractModel $userExpiration
+     * @param \Magento\Framework\Model\AbstractModel $userExpiration
      * @return $this
-     * @throws LocalizedException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function _beforeSave(AbstractModel $userExpiration)
+    protected function _beforeSave(\Magento\Framework\Model\AbstractModel $userExpiration)
     {
-        /** @var $userExpiration UserExpirationModel */
+        /** @var $userExpiration \Magento\Security\Model\UserExpiration */
         $expiresAt = $userExpiration->getExpiresAt();
-        $utcValue = strtotime($expiresAt)
-            ? $this->timezone->convertConfigTimeToUtc($expiresAt)
-            : $this->localizedDateToUtcConverter->convertLocalizedDateToUtc($expiresAt);
+        $utcValue = $this->timezone->convertConfigTimeToUtc($expiresAt);
         $userExpiration->setExpiresAt($utcValue);
 
         return $this;
@@ -89,16 +71,15 @@ class UserExpiration extends AbstractDb
     /**
      * Convert to store time.
      *
-     * @param AbstractModel $userExpiration
-     * @return $this|AbstractDb
+     * @param \Magento\Framework\Model\AbstractModel $userExpiration
+     * @return $this|\Magento\Framework\Model\ResourceModel\Db\AbstractDb
      * @throws \Exception
      */
-    protected function _afterLoad(AbstractModel $userExpiration)
+    protected function _afterLoad(\Magento\Framework\Model\AbstractModel $userExpiration)
     {
-        /** @var $userExpiration UserExpirationModel */
+        /** @var $userExpiration \Magento\Security\Model\UserExpiration */
         if ($userExpiration->getExpiresAt()) {
-            $date = new \DateTime($userExpiration->getExpiresAt());
-            $storeValue = $this->timezone->date($date);
+            $storeValue = $this->timezone->date($userExpiration->getExpiresAt());
             $userExpiration->setExpiresAt($storeValue->format('Y-m-d H:i:s'));
         }
 

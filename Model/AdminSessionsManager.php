@@ -3,12 +3,11 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-declare(strict_types=1);
 
 namespace Magento\Security\Model;
 
 use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
-use Magento\Security\Model\ResourceModel\AdminSessionInfo\CollectionFactory;
+use \Magento\Security\Model\ResourceModel\AdminSessionInfo\CollectionFactory;
 
 /**
  * Admin Sessions Manager Model
@@ -115,7 +114,7 @@ class AdminSessionsManager
             $result = $this->createAdminSessionInfoCollection()->updateActiveSessionsStatus(
                 AdminSessionInfo::LOGGED_OUT_BY_LOGIN,
                 $this->getCurrentSession()->getUserId(),
-                $this->getCurrentSession()->getId(),
+                $this->getCurrentSession()->getSessionId(),
                 $olderThen
             );
             if ($result) {
@@ -174,15 +173,8 @@ class AdminSessionsManager
     public function getCurrentSession()
     {
         if (!$this->currentSession) {
-            $adminSessionInfoId = $this->authSession->getAdminSessionInfoId();
-            if (!$adminSessionInfoId) {
-                $this->createNewSession();
-                $adminSessionInfoId = $this->authSession->getAdminSessionInfoId();
-                $this->logoutOtherUserSessions();
-            }
-
             $this->currentSession = $this->adminSessionInfoFactory->create();
-            $this->currentSession->load($adminSessionInfoId, 'id');
+            $this->currentSession->load($this->authSession->getSessionId(), 'session_id');
         }
 
         return $this->currentSession;
@@ -264,7 +256,7 @@ class AdminSessionsManager
             ->filterByUser(
                 $this->authSession->getUser()->getId(),
                 \Magento\Security\Model\AdminSessionInfo::LOGGED_IN,
-                $this->authSession->getAdminSessionInfoId()
+                $this->authSession->getSessionId()
             )
             ->filterExpiredSessions($this->securityConfig->getAdminSessionLifetime())
             ->loadData();
@@ -298,17 +290,16 @@ class AdminSessionsManager
      */
     protected function createNewSession()
     {
-        $adminSessionInfo = $this->adminSessionInfoFactory
+        $this->adminSessionInfoFactory
             ->create()
             ->setData(
                 [
+                    'session_id' => $this->authSession->getSessionId(),
                     'user_id' => $this->authSession->getUser()->getId(),
                     'ip' => $this->remoteAddress->getRemoteAddress(),
                     'status' => AdminSessionInfo::LOGGED_IN
                 ]
             )->save();
-
-        $this->authSession->setAdminSessionInfoId($adminSessionInfo->getId());
 
         return $this;
     }

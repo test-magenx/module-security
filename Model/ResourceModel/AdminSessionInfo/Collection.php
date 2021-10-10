@@ -3,8 +3,6 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-declare(strict_types=1);
-
 namespace Magento\Security\Model\ResourceModel\AdminSessionInfo;
 
 /**
@@ -105,7 +103,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
         $this->addFieldToFilter('user_id', $userId);
         $this->addFieldToFilter('status', $status);
         if (null !== $sessionIdToExclude) {
-            $this->addFieldToFilter('id', ['neq' => $sessionIdToExclude]);
+            $this->addFieldToFilter('session_id', ['neq' => $sessionIdToExclude]);
         }
         return $this;
     }
